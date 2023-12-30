@@ -1,5 +1,14 @@
 class HammingCoder:
-    def __init__(self):
+    redundant_bits_count = 0
+    message_size = 0
+
+    def __init__(self, message_size):
+        self.message_size = message_size
+        # Calculate redundant bits positions
+        for i in range(message_size):
+            if 2 ** i >= message_size + i + 1:
+                self.redundant_bits_count = i
+                break
         self.padding = 0
 
     def __split_into_chunks(self, data, chunk_size):
@@ -23,18 +32,23 @@ class HammingCoder:
 
         encoded_data = []
 
-        blocks = self.__split_into_chunks(data, 4)
+        blocks = self.__split_into_chunks(data, self.message_size)
 
         for block in blocks:
-            # Calculate parity bits
-            parity_bits = [0, 0, 0]
-            parity_bits[0] = block[0] ^ block[1] ^ block[3]
-            parity_bits[1] = block[0] ^ block[2] ^ block[3]
-            parity_bits[2] = block[1] ^ block[2] ^ block[3]
+            encoded_block = []
+            # Position parity bits
+            current_base = 0
+            current_data_pos = 0
+            for i in range(1, self.message_size + self.redundant_bits_count + 1):
+                if i == 2 ** current_base:
+                    encoded_block = encoded_block.append(0)
+                    current_base += 1
+                else:
+                    encoded_block = encoded_block.append(block[-1 * current_data_pos])
+                    current_data_pos += 1
 
-            # Create the encoded message
-            encoded_block = [block[0], block[1], parity_bits[0], block[2], parity_bits[1], parity_bits[2], block[3]]
-            encoded_data = encoded_data + encoded_block
+            # Reverse block since positions are counted backwards
+            encoded_data.append(encoded_block[::-1])
 
         return encoded_data
 
