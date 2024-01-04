@@ -13,7 +13,7 @@ class ReplicationCoder:
     def decode(self, encoded_data):
         decoded_data = []
         for block in np.split(encoded_data, int(len(encoded_data)/self._repetitions)):
-            if sum(block < 1):
+            if sum(block) > 1:
                 decoded_data.append(1)
             else:
                 decoded_data.append(0)

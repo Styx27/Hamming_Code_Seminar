@@ -1,3 +1,6 @@
+from functools import reduce
+
+
 class HammingCoder:
     redundant_bits_count = 0
     message_size = 0
@@ -41,40 +44,70 @@ class HammingCoder:
             current_data_pos = 0
             for i in range(1, self.message_size + self.redundant_bits_count + 1):
                 if i == 2 ** current_base:
-                    encoded_block = encoded_block.append(0)
+                    encoded_block.append(0)
                     current_base += 1
                 else:
-                    encoded_block = encoded_block.append(block[-1 * current_data_pos])
+                    encoded_block.append(block[current_data_pos])
                     current_data_pos += 1
 
-            # Reverse block since positions are counted backwards
-            encoded_data.append(encoded_block[::-1])
+            # Calculate Value of parity bits
+
+            for i in range(self.redundant_bits_count):
+                parity_position = 2 ** i  # 1-indexed position
+                count = 0
+                for bit_position in range(1, len(encoded_block) + 1):
+                    if bit_position & parity_position != 0:
+                        if encoded_block[bit_position - 1] == 1:
+                            count += 1
+
+                # Even Parity
+                if count % 2 == 0:
+                    encoded_block[parity_position - 1] = 0
+                else:
+                    encoded_block[parity_position - 1] = 1
+
+            encoded_data = encoded_data + encoded_block
 
         return encoded_data
 
     def hamming_decode(self, encoded_data):
 
         decoded_data = []
-        blocks = self.__split_into_chunks(encoded_data, 7)
-
+        blocks = self.__split_into_chunks(encoded_data, self.message_size + self.redundant_bits_count)
         for block in blocks:
-            # Calculate syndrome bits
-            syndrome = [
-                block[0] ^ block[2] ^ block[4] ^ block[6],
-                block[1] ^ block[2] ^ block[5] ^ block[6],
-                block[3] ^ block[4] ^ block[5] ^ block[6]
-            ]
+            decoded_block = list(block)
 
-            # Check for errors and correct if possible
-            error_position = syndrome[0] + syndrome[1] * 2 + syndrome[2] * 4
+            # Do parity checks again
+            syndrome = []
+            for i in reversed(range(self.redundant_bits_count)):
+                parity_pos = 2 ** i
+                count = 0
+                for bit_position in range(1, len(block) + 1):
+                    if parity_pos & bit_position != 0:
+                        if block[bit_position - 1] == 1:
+                            count += 1
 
+                if count % 2 == 0:
+                    syndrome.append(0)
+                else:
+                    syndrome.append(1)
+
+            # Convert bits to integer
+            error_position = int("".join(str(x) for x in syndrome), 2)
+
+            # Fix error if there is one
             if error_position != 0:
-                print("Error at position", error_position)
-                # Correct the error
-                block[error_position - 1] ^= 1
+                decoded_block[error_position - 1] = 1 - decoded_block[error_position - 1]
 
-            # Extract the original data
-            decoded_block = [block[0], block[1], block[3], block[6]]
-            decoded_data = decoded_data + decoded_block
+            decoded_block2 = []
+            # Remove parity bits
+            exponent = 0
+            for position in range(1, len(decoded_block) + 1):
+                if 2 ** exponent == position:
+                    exponent += 1
+                else:
+                    decoded_block2.append(decoded_block[position - 1])
+
+            decoded_data = decoded_data + decoded_block2
 
         return decoded_data
