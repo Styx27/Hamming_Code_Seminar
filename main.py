@@ -4,7 +4,8 @@ import numpy as np
 from HammingCoder import HammingCoder
 from ReplicationCoder import ReplicationCoder
 
-channel_flip_prob = 0.05
+channel_flip_prob = 0.01
+filename = "letter_A"  # filename without format
 
 
 def binary_symmetric_channel(array, flip_prob):
@@ -27,7 +28,7 @@ def reformat_array(array, shape):
 
 
 if __name__ == '__main__':
-    image = Image.open("bw_dino.png")  # Replace with the path to your image
+    image = Image.open(filename + ".png")
 
     # Convert the image to grayscale
     gray_image = image.convert("L")
@@ -45,19 +46,17 @@ if __name__ == '__main__':
     channel_array_baseline = binary_symmetric_channel(flattened_binary_array, channel_flip_prob)
 
     output_image_baseline = Image.fromarray(reformat_array(channel_array_baseline, binary_array.shape))
-    output_image_baseline.save("bw_dino_baseline.png")
+    output_image_baseline.save(filename + "_baseline.png")
 
-    # Encode with the 4,7 Hamming code
+    # Encode with the Hamming code
 
-    hamming_coder = HammingCoder(4)
+    hamming_coder = HammingCoder(4)  # Insert 1, 4, 11, 26, 57, 120
     encoded_array_hamming = hamming_coder.hamming_encode(flattened_binary_array)
     channel_array_hamming = binary_symmetric_channel(encoded_array_hamming, channel_flip_prob)
     decoded_array_hamming = hamming_coder.hamming_decode(channel_array_hamming)
 
     output_image_hamming = Image.fromarray(reformat_array(decoded_array_hamming, binary_array.shape))
-    output_image_hamming.save("bw_dino_hamming.png")
-    print(hamming_coder.hamming_decode(hamming_coder.hamming_encode([1, 0, 1, 1])) == [1, 0, 1, 1])
-
+    output_image_hamming.save(filename + "_hamming.png")
 
     # Replication Coding
     replication_coder = ReplicationCoder(3)
@@ -67,10 +66,4 @@ if __name__ == '__main__':
     decoded_array_replication = replication_coder.decode(channel_array_replication)
 
     output_image_replication = Image.fromarray(reformat_array(decoded_array_replication, binary_array.shape))
-    output_image_replication.save("bw_dino_replication.png")
-
-    # decoded_np_array = np.array(decoded_array_replication)
-    # decoded_image = decoded_np_array.reshape(binary_array.shape)
-    # decoded_image = np.logical_not(decoded_image).astype(int)
-    # np_array = np.array(decoded_image * 255)
-    # image_array = np_array.astype(np.uint8)
+    output_image_replication.save(filename + "_repetition.png")
